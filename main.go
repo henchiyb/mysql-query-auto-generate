@@ -2,6 +2,7 @@ package main
 
 import (
 	_ "embed"
+	"encoding/json"
 	"fmt"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -31,6 +32,11 @@ type MySQLConnectionEnv struct {
 	Password string
 }
 
+type MySQLColumn struct {
+	Name string
+	Type string
+}
+
 func newMysqlDbConnection(host string, port string, dbName string, username string, password string) *MySQLConnectionEnv {
 	return &MySQLConnectionEnv{
 		Host:     host,
@@ -47,7 +53,8 @@ func (mc *MySQLConnectionEnv) ConnectDB() (*sqlx.DB, error) {
 }
 
 func connectToDatabase(host string, port string, dbName string, username string, password string) {
-	db, err := newMysqlDbConnection(host, port, dbName, username, password).ConnectDB()
+	var err error
+	db, err = newMysqlDbConnection(host, port, dbName, username, password).ConnectDB()
 	if err != nil {
 		fmt.Println("DB connection failed : ", err)
 	}
@@ -62,26 +69,26 @@ func connectToDatabase(host string, port string, dbName string, username string,
 		res.Scan(&tableName)
 		tables = append(tables, tableName)
 	}
-	// fmt.Println(tables)
-
-	res, err = db.Query(`SELECT * FROM ` + tables[0] + ` LIMIT 1`)
-	fmt.Println(err)
-	columnsName, _ := res.Columns()
-	columnsType, _ := res.ColumnTypes()
-	for _, t := range columnsType {
-		fmt.Println("cols type: ", t.DatabaseTypeName())
-	}
-	fmt.Println(columnsName)
 }
 
 func tablesNames() []string {
 	return tables
 }
 
+func columnsNames(tableName string) []string {
+	res, err := db.Query(`SELECT * FROM ` + tables[0] + ` LIMIT 1`)
+	fmt.Println(err)
+	columnsName, _ := res.Columns()
+	columnsType, _ := res.ColumnTypes()
+	columns := []string{}
+	for i, t := range columnsType {
+		json_s, _ := json.Marshal(MySQLColumn{Name: columnsName[i], Type: t.DatabaseTypeName()})
+		columns = append(columns, string(json_s))
+	}
+	return columns
+}
+
 func main() {
-
-	// db.Close()
-
 	app := wails.CreateApp(&wails.AppConfig{
 		Width:  1024,
 		Height: 768,
@@ -93,5 +100,6 @@ func main() {
 	app.Bind(basic)
 	app.Bind(connectToDatabase)
 	app.Bind(tablesNames)
+	app.Bind(columnsNames)
 	app.Run()
 }
