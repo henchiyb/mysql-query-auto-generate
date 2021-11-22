@@ -13,10 +13,10 @@ func basic(word string) string {
 	return "World!" + " " + word
 }
 
-//go:embed frontend/dist/my-app/main.js
+// go:embed frontend-v12/dist/frontend-v12/main.js
 var js string
 
-//go:embed frontend/dist/my-app/styles.css
+//go:embed frontend-v12/dist/frontend-v12/styles.css
 var css string
 
 //DB Connect
@@ -74,6 +74,10 @@ func connectToDatabase(host string, port string, dbName string, username string,
 	fmt.Println(columnsName)
 }
 
+func tablesNames() []string {
+	return tables
+}
+
 func main() {
 
 	// db.Close()
@@ -88,5 +92,6 @@ func main() {
 	})
 	app.Bind(basic)
 	app.Bind(connectToDatabase)
+	app.Bind(tablesNames)
 	app.Run()
 }
